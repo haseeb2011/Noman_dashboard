@@ -1,5 +1,6 @@
 import os
 import json
+from pathlib import Path
 import pandas as pd
 import streamlit as st
 import time
@@ -23,18 +24,21 @@ def run_preprocessing(data_dir):
     Fallback preprocessing pipeline. Loads raw Yelp JSON datasets,
     cleans and aggregates them, and writes the lightweight CSV files.
     """
-    biz_path = os.path.join(data_dir, "yelp_academic_dataset_business.json")
-    checkin_path = os.path.join(data_dir, "yelp_academic_dataset_checkin.json")
-    tip_path = os.path.join(data_dir, "yelp_academic_dataset_tip.json")
+    data_dir = Path(data_dir)
+    biz_path = data_dir / "yelp_academic_dataset_business.json"
+    checkin_path = data_dir / "yelp_academic_dataset_checkin.json"
+    tip_path = data_dir / "yelp_academic_dataset_tip.json"
     
-    if not os.path.exists(biz_path):
-        raise FileNotFoundError(f"Raw business dataset not found at: {biz_path}")
+    if not biz_path.exists():
+        raise FileNotFoundError(
+            f"Raw business dataset not found at: {biz_path} (expected files in {data_dir})"
+        )
         
     print("Preprocessing raw datasets (this runs once)...")
     
     # 1. Load Business Dataset
     biz_dict = {}
-    with open(biz_path, "r", encoding="utf-8") as f:
+    with biz_path.open("r", encoding="utf-8") as f:
         for line in f:
             bj = json.loads(line)
             biz_id = bj["business_id"]
@@ -60,8 +64,8 @@ def run_preprocessing(data_dir):
 
     # 2. Process Checkins
     checkin_rows = []
-    if os.path.exists(checkin_path):
-        with open(checkin_path, "r", encoding="utf-8") as f:
+    if checkin_path.exists():
+        with checkin_path.open("r", encoding="utf-8") as f:
             for line in f:
                 cj = json.loads(line)
                 biz_id = cj["business_id"]
@@ -83,8 +87,8 @@ def run_preprocessing(data_dir):
     
     # 3. Process Tips
     tip_rows = []
-    if os.path.exists(tip_path):
-        with open(tip_path, "r", encoding="utf-8") as f:
+    if tip_path.exists():
+        with tip_path.open("r", encoding="utf-8") as f:
             for line in f:
                 tj = json.loads(line)
                 biz_id = tj["business_id"]
@@ -109,8 +113,8 @@ def run_preprocessing(data_dir):
     # Save Dataframes
     df_biz_all = pd.DataFrame(biz_dict.values())
     
-    cleaned_biz_path = os.path.join(data_dir, "cleaned_businesses.csv")
-    cleaned_ts_path = os.path.join(data_dir, "cleaned_time_series.csv")
+    cleaned_biz_path = data_dir / "cleaned_businesses.csv"
+    cleaned_ts_path = data_dir / "cleaned_time_series.csv"
     
     df_biz_all.to_csv(cleaned_biz_path, index=False)
     df_ts.to_csv(cleaned_ts_path, index=False)
@@ -118,15 +122,19 @@ def run_preprocessing(data_dir):
 
 
 @st.cache_data(show_spinner="Loading Yelp datasets...")
-def load_data(data_dir=r"c:\Users\HP\OneDrive\Desktop\Noman`s Project\data"):
+def load_data(data_dir=None):
     """
     Loads preprocessed datasets. If they do not exist, runs the
     preprocessing pipeline first.
     """
-    cleaned_biz_path = os.path.join(data_dir, "cleaned_businesses.csv")
-    cleaned_ts_path = os.path.join(data_dir, "cleaned_time_series.csv")
+    if data_dir is None:
+        data_dir = os.environ.get("DATA_DIR", Path(__file__).resolve().parent / "data")
+    data_dir = Path(data_dir)
+
+    cleaned_biz_path = data_dir / "cleaned_businesses.csv"
+    cleaned_ts_path = data_dir / "cleaned_time_series.csv"
     
-    if not os.path.exists(cleaned_biz_path) or not os.path.exists(cleaned_ts_path):
+    if not cleaned_biz_path.exists() or not cleaned_ts_path.exists():
         run_preprocessing(data_dir)
         
     df_biz = pd.read_csv(cleaned_biz_path)
