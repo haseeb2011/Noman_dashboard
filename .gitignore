@@ -1,0 +1,21 @@
+# Yelp raw JSON files (exceeds GitHub 100MB file limit)
+data/yelp_academic_dataset_*.json
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Local Streamlit configs/caches
+.streamlit/
+.streamlit/config.toml
+
+# OS-generated files
+Thumbs.db
+db.json
+.DS_Store
